@@ -5,8 +5,11 @@ import { RouterLink } from '@angular/router';
   selector: 'app-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p>Home</p>
-    <a routerLink="/home/page-one">Go to Page One</a>
+    <h1>Home</h1>
+    <ul>
+      <li><a routerLink="/home/shipment-search">Shipment Search</a></li>
+      <li><a routerLink="/home/locations">Locations</a></li>
+    </ul>
   `,
   imports: [RouterLink],
 })

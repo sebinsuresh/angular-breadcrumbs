@@ -9,7 +9,7 @@ import { BreadcrumbItem } from './breadcrumb.service';
   template: `
     @for (item of items(); track item.url; let last = $last) {
       @if (!last) {
-        <a [routerLink]="item.url">{{ item.label }}</a>
+        <a [routerLink]="item.url" [queryParams]="item.queryParams">{{ item.label }}</a>
         <span> > </span>
       } @else {
         <span>{{ item.label }}</span>

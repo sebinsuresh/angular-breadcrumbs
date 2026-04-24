@@ -2,12 +2,12 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-page-two',
+  selector: 'app-locations',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p>PageTwo</p>
-    <a routerLink="/home/page-one/page-two/page-three">Go to Page Three</a>
+    <h1>Locations</h1>
+    <a routerLink="/home/locations/location-details">View Location Details</a>
   `,
   imports: [RouterLink],
 })
-export class PageTwo {}
+export class Locations {}

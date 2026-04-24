@@ -6,6 +6,7 @@ import { RouteId } from '../app.routes';
 export interface BreadcrumbItem {
   label: string;
   url: string;
+  queryParams?: Record<string, string>;
 }
 
 interface BreadcrumbRouteConfig {
@@ -24,26 +25,40 @@ export const breadcrumbRouteMap: Record<RouteId, BreadcrumbRouteConfig> = {
     label: signal('Home'),
     url: signal('/home'),
   },
-  [RouteId.PageOne]: {
-    breadcrumbIds: [RouteId.Home, RouteId.PageOne],
-    defaultLabel: 'Page One',
-    defaultUrl: '/home/page-one',
-    label: signal('Page One'),
-    url: signal('/home/page-one'),
+  [RouteId.ShipmentSearch]: {
+    breadcrumbIds: [RouteId.Home, RouteId.ShipmentSearch],
+    defaultLabel: 'Shipment Search',
+    defaultUrl: '/home/shipment-search',
+    label: signal('Shipment Search'),
+    url: signal('/home/shipment-search'),
   },
-  [RouteId.PageTwo]: {
-    breadcrumbIds: [RouteId.Home, RouteId.PageOne, RouteId.PageTwo],
-    defaultLabel: 'Page Two',
-    defaultUrl: '/home/page-one/page-two',
-    label: signal('Page Two'),
-    url: signal('/home/page-one/page-two'),
+  [RouteId.ShipmentSearchResults]: {
+    breadcrumbIds: [RouteId.Home, RouteId.ShipmentSearch, RouteId.ShipmentSearchResults],
+    defaultLabel: 'Shipment Search Results',
+    defaultUrl: '/home/shipment-search/results',
+    label: signal('Shipment Search Results'),
+    url: signal('/home/shipment-search/results'),
   },
-  [RouteId.PageThree]: {
-    breadcrumbIds: [RouteId.Home, RouteId.PageOne, RouteId.PageTwo, RouteId.PageThree],
-    defaultLabel: 'Page Three',
-    defaultUrl: '/home/page-one/page-two/page-three',
-    label: signal('Page Three'),
-    url: signal('/home/page-one/page-two/page-three'),
+  [RouteId.ShipmentDetails]: {
+    breadcrumbIds: [RouteId.Home, RouteId.ShipmentSearch, RouteId.ShipmentSearchResults, RouteId.ShipmentDetails],
+    defaultLabel: 'Shipment Details',
+    defaultUrl: '/home/shipment-search/results/shipment-details',
+    label: signal('Shipment Details'),
+    url: signal('/home/shipment-search/results/shipment-details'),
+  },
+  [RouteId.Locations]: {
+    breadcrumbIds: [RouteId.Home, RouteId.Locations],
+    defaultLabel: 'Locations',
+    defaultUrl: '/home/locations',
+    label: signal('Locations'),
+    url: signal('/home/locations'),
+  },
+  [RouteId.LocationDetails]: {
+    breadcrumbIds: [RouteId.Home, RouteId.Locations, RouteId.LocationDetails],
+    defaultLabel: 'Location Details',
+    defaultUrl: '/home/locations/location-details',
+    label: signal('Location Details'),
+    url: signal('/home/locations/location-details'),
   },
 };
 
@@ -54,8 +69,31 @@ export class BreadcrumbService {
   readonly breadcrumbs = signal<BreadcrumbItem[]>([]);
 
   constructor() {
-    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => {
-      // TODO: build breadcrumbs from current route tree
+    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe((event) => {
+      const routeId = this.findRouteId(event.urlAfterRedirects);
+      if (!routeId) return;
+
+      const routeConfig = breadcrumbRouteMap[routeId];
+      routeConfig.url.set(event.urlAfterRedirects);
+
+      this.breadcrumbs.set(
+        routeConfig.breadcrumbIds.map((id) => {
+          const fullUrl = breadcrumbRouteMap[id].url();
+          const [path, queryString] = fullUrl.split('?');
+
+          let queryParams = undefined;
+          if (queryString) {
+            queryParams = Object.fromEntries(new URLSearchParams(queryString).entries());
+          }
+
+          return { label: breadcrumbRouteMap[id].label(), url: path, queryParams };
+        }),
+      );
     });
+  }
+
+  private findRouteId(url: string): RouteId | undefined {
+    const path = url.split('?')[0];
+    return (Object.keys(breadcrumbRouteMap) as RouteId[]).find((id) => breadcrumbRouteMap[id].defaultUrl === path);
   }
 }
