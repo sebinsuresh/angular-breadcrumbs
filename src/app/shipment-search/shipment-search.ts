@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { patchState } from '@ngrx/signals';
+import { ShipmentSearchStore } from './shipment-search.store';
 
 @Component({
   selector: 'app-shipment-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [ShipmentSearchStore],
   template: `
     <h1>Shipment Search</h1>
     <div>
@@ -17,9 +20,12 @@ import { Router } from '@angular/router';
 })
 export class ShipmentSearch {
   private readonly router = inject(Router);
+  private readonly store = inject(ShipmentSearchStore);
   protected readonly queryControl = new FormControl('', { nonNullable: true });
 
   protected search(): void {
-    this.router.navigate(['/home/shipment-search/results'], { queryParams: { q: this.queryControl.value } });
+    const query = this.queryControl.value;
+    patchState(this.store, { query });
+    this.router.navigate(['/home/shipment-search/results'], { queryParams: { q: query } });
   }
 }
