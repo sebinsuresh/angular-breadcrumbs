@@ -124,7 +124,7 @@ export class BreadcrumbService {
     return parts.length >= 2 ? `${parts[0]} ${parts[1][0]}` : parts[0];
   }
 
-  private parseUrl(fullUrl: string): Partial<BreadcrumbItem> {
+  private parseUrl(fullUrl: string) {
     const [url, queryString] = fullUrl.split('?');
 
     let queryParams: Record<string, string> | undefined;
