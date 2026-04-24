@@ -7,7 +7,6 @@ import { ShipmentSearchStore } from './shipment-search.store';
 @Component({
   selector: 'app-shipment-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ShipmentSearchStore],
   template: `
     <h1>Shipment Search</h1>
     <div>

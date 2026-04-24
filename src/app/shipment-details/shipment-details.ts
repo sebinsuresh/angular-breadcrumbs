@@ -9,7 +9,6 @@ import { ShipmentDetailStore } from './shipment-details.store';
 @Component({
   selector: 'app-shipment-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ShipmentDetailStore],
   template: `
     <h1>Shipment Details</h1>
     @if (store.shipment(); as shipment) {
