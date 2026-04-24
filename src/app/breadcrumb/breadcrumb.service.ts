@@ -1,7 +1,10 @@
-import { inject, Injectable, signal, WritableSignal } from '@angular/core';
+import { computed, inject, Injectable, signal, Signal, WritableSignal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { RouteId } from '../app.routes';
+import { ShipmentDetailStore } from '../shipment-details/shipment-details.store';
+import { ShipmentSearchStore } from '../shipment-search/shipment-search.store';
+import { ShipmentDetail } from '../shipment-details/shipment-details.service';
 
 export interface BreadcrumbItem {
   label: string;
@@ -13,7 +16,7 @@ interface BreadcrumbRouteConfig {
   breadcrumbIds: RouteId[];
   defaultLabel: string;
   defaultUrl: string;
-  label: WritableSignal<string>;
+  label: Signal<string>;
   url: WritableSignal<string>;
 }
 
@@ -65,35 +68,76 @@ export const breadcrumbRouteMap: Record<RouteId, BreadcrumbRouteConfig> = {
 @Injectable({ providedIn: 'root' })
 export class BreadcrumbService {
   private readonly router = inject(Router);
+  private readonly shipmentSearchStore = inject(ShipmentSearchStore);
+  private readonly shipmentDetailStore = inject(ShipmentDetailStore);
 
-  readonly breadcrumbs = signal<BreadcrumbItem[]>([]);
+  private readonly currentRouteId = signal<RouteId | undefined>(undefined);
+
+  readonly breadcrumbs = computed(() => {
+    const routeId = this.currentRouteId();
+    if (!routeId) return [];
+
+    const routeConfig = breadcrumbRouteMap[routeId];
+    return routeConfig.breadcrumbIds.map((id) => {
+      const fullUrl = breadcrumbRouteMap[id].url();
+      return { label: breadcrumbRouteMap[id].label(), ...this.parseUrl(fullUrl) };
+    });
+  });
 
   constructor() {
-    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe((event) => {
+    this.initializeBreadcrumbForSearchResults();
+    this.initializeBreadcrumbsForShipmentDetails();
+    this.setupBreadcrumbUrlUpdates();
+  }
+
+  private initializeBreadcrumbForSearchResults() {
+    breadcrumbRouteMap[RouteId.ShipmentSearchResults].label = computed(() => {
+      const query = this.shipmentSearchStore.query();
+      return query ? `Search results for '${query}'` : 'Shipment Search Results';
+    });
+  }
+
+  private initializeBreadcrumbsForShipmentDetails() {
+    breadcrumbRouteMap[RouteId.ShipmentDetails].label = computed(() => {
+      const shipment = this.shipmentDetailStore.shipment();
+      if (!shipment?.purchaserName) {
+        return 'Shipment Details';
+      }
+
+      const abbrev = this.getPurchaserNameAbbreviated(shipment);
+      return `${abbrev}'s Shipment`;
+    });
+  }
+
+  private setupBreadcrumbUrlUpdates() {
+    this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe((event) => {
       const routeId = this.findRouteId(event.urlAfterRedirects);
       if (!routeId) return;
 
-      const routeConfig = breadcrumbRouteMap[routeId];
-      routeConfig.url.set(event.urlAfterRedirects);
-
-      this.breadcrumbs.set(
-        routeConfig.breadcrumbIds.map((id) => {
-          const fullUrl = breadcrumbRouteMap[id].url();
-          const [path, queryString] = fullUrl.split('?');
-
-          let queryParams = undefined;
-          if (queryString) {
-            queryParams = Object.fromEntries(new URLSearchParams(queryString).entries());
-          }
-
-          return { label: breadcrumbRouteMap[id].label(), url: path, queryParams };
-        }),
-      );
+      breadcrumbRouteMap[routeId].url.set(event.urlAfterRedirects);
+      this.currentRouteId.set(routeId);
     });
+  }
+
+  private getPurchaserNameAbbreviated(shipment: ShipmentDetail): string {
+    const parts = shipment.purchaserName.trim().split(/\s+/);
+    return parts.length >= 2 ? `${parts[0]} ${parts[1][0]}` : parts[0];
+  }
+
+  private parseUrl(fullUrl: string): Partial<BreadcrumbItem> {
+    const [url, queryString] = fullUrl.split('?');
+
+    let queryParams: Record<string, string> | undefined;
+    if (queryString) {
+      queryParams = Object.fromEntries(new URLSearchParams(queryString).entries());
+    }
+
+    return { url, queryParams };
   }
 
   private findRouteId(url: string): RouteId | undefined {
     const path = url.split('?')[0];
-    return (Object.keys(breadcrumbRouteMap) as RouteId[]).find((id) => breadcrumbRouteMap[id].defaultUrl === path);
+    const routeIdList = Object.keys(breadcrumbRouteMap) as RouteId[];
+    return routeIdList.find((id) => breadcrumbRouteMap[id].defaultUrl === path);
   }
 }
