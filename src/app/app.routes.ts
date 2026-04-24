@@ -5,8 +5,9 @@ import { PageTwo } from './page-two/page-two';
 import { PageThree } from './page-three/page-three';
 
 export const routes: Routes = [
-  { path: '', component: Home },
-  { path: 'page-one', component: PageOne },
-  { path: 'page-two', component: PageTwo },
-  { path: 'page-three', component: PageThree },
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: 'home', component: Home },
+  { path: 'home/page-one', component: PageOne },
+  { path: 'home/page-one/page-two', component: PageTwo },
+  { path: 'home/page-one/page-two/page-three', component: PageThree },
 ];
